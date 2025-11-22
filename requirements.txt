@@ -1,0 +1,10 @@
+# Amo Musica Core - Wymagane biblioteki
+
+# Podstawowe zależności
+numpy>=1.21.0
+kivy>=2.1.0
+numpy>=1.21.0
+kivy>=2.1.0
+aubio>=0.4.9
+midiutil>=1.2.1
+pydub>=0.25.1
