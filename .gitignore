@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+venv/
+
+# Amo Musica Data
+data/
+*.soul
+*.soul.tmp
+
+# Audio / Temp files
+*.mp3
+*.wav
+*.mid
+*_tab.txt
