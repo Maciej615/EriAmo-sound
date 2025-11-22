@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # core/transcriber.py
 # =============================================================================
-# Audio Engine - Słuch Absolutny Systemu
+# Audio Engine v0.3 - Psychoakustyka (Siren & Shaman Patch)
 # =============================================================================
 
 import os
 import aubio
+import numpy as np
 from midiutil import MIDIFile
 from pydub import AudioSegment
 
@@ -13,123 +14,119 @@ class AudioTranscriber:
     def __init__(self):
         self.samplerate = 44100
         self.hop_size = 512
-        # Strojenie: Standard E (od najcieńszej 'e' do najgrubszej 'E')
-        # MIDI numbers: e=64, B=59, G=55, D=50, A=45, E=40
+        # Strojenie Standard E (do tabulatur)
         self.tuning_strings = [64, 59, 55, 50, 45, 40]
 
     def convert_to_wav(self, filepath):
-        """Konwertuje mp3/inne do wav tymczasowo (aubio wymaga wav)."""
-        if filepath.lower().endswith('.wav'):
-            return filepath
-        
-        print(f"[AUDIO] Konwersja formatu dla: {filepath}...")
+        if filepath.lower().endswith('.wav'): return filepath
+        # Konwersja MP3/inne na WAV
         audio = AudioSegment.from_file(filepath)
         wav_path = filepath + ".temp.wav"
         audio.export(wav_path, format="wav")
         return wav_path
 
+    def analyze_psychoacoustics(self, notes):
+        """
+        Analizuje duszę utworu: Rytmika (The Hu) vs Wysokość (Tarja).
+        """
+        if not notes or len(notes) < 2:
+            return {
+                "density": 0, "pitch_range": 0, 
+                "max_pitch": 0, "rhythm_consistency": 0
+            }
+
+        pitches = [n[1] for n in notes]
+        times = [n[0] for n in notes]
+        
+        # 1. Analiza Wysokości (Dla Tarji/Tenorów)
+        min_p, max_p = min(pitches), max(pitches)
+        pitch_range = max_p - min_p
+        
+        # 2. Analiza Gęstości
+        duration = times[-1] - times[0] if times else 1
+        density = len(notes) / duration if duration > 0 else 0
+        
+        # 3. Analiza Rytmiczna (Dla The Hu / Szamanizmu)
+        # Obliczamy różnice czasu między kolejnymi nutami (delta)
+        deltas = np.diff(times)
+        if len(deltas) > 0:
+            # Odchylenie standardowe delty. Małe odchylenie = Równy Rytm (Marsz).
+            # Duże odchylenie = Jazz/Chaos/Rubato.
+            rhythm_std = np.std(deltas)
+            # Odwracamy: Im mniejsze odchylenie, tym wyższa spójność (max 10)
+            rhythm_consistency = 10.0 / (rhythm_std + 0.1)
+        else:
+            rhythm_consistency = 0
+
+        return {
+            "pitch_range": pitch_range,       # Epickość melodii
+            "max_pitch": max_p,               # Wysoki rejestr (Siren Call)
+            "density": density,               # Szybkość/Złożoność
+            "rhythm_consistency": rhythm_consistency # Szamański Puls
+        }
+
     def audio_to_midi(self, filename, output_midi="output.mid"):
-        """Analizuje audio i zwraca listę nut oraz generuje plik MIDI."""
-        print(f"[AUDIO] Rozpoczynam ekstrakcję nut z: {filename}")
+        # --- Standardowa detekcja nut (jak w v0.2) ---
+        print(f"[AUDIO] Analiza: {filename}")
         wav_file = self.convert_to_wav(filename)
         
-        # Konfiguracja Aubio (algorytm YIN jest dobry do pitch detection)
         s = aubio.source(wav_file, self.samplerate, self.hop_size)
-        tolerance = 0.8
         pitch_o = aubio.pitch("yin", 2048, self.hop_size, self.samplerate)
         pitch_o.set_unit("midi")
-        pitch_o.set_tolerance(tolerance)
+        pitch_o.set_tolerance(0.8)
 
         notes = []
         total_frames = 0
         
-        # Pętla analizy ramka po ramce
         while True:
             samples, read = s()
             pitch = pitch_o(samples)[0]
             confidence = pitch_o.get_confidence()
-
-            # Filtrujemy szum (confidence > 0.6)
             if confidence > 0.6 and pitch > 0:
-                midi_note = int(round(pitch))
-                timestamp = total_frames / float(self.samplerate)
-                notes.append((timestamp, midi_note))
-
+                notes.append((total_frames / float(self.samplerate), int(round(pitch))))
             total_frames += read
             if read < self.hop_size: break
 
-        # Sprzątanie pliku tymczasowego
         if wav_file != filename and os.path.exists(wav_file):
             os.remove(wav_file)
 
-        if not notes:
-            return []
-
-        # --- Generowanie pliku MIDI ---
+        # Zapis MIDI
         mf = MIDIFile(1)
-        mf.addTrackName(0, 0, "Amo Core Transcription")
-        mf.addTempo(0, 0, 120) # Domyślne tempo
-
-        current_time = 0
-        unique_notes = [] 
+        mf.addTrackName(0, 0, "Amo Core")
+        mf.addTempo(0, 0, 120)
         
-        # Prosta kwantyzacja i usuwanie duplikatów
+        unique_notes = []
         last_note = -1
-        for time_sec, note in notes:
-            # Zapisujemy nową nutę tylko jeśli się zmieniła
-            if note != last_note:
-                # (track, channel, pitch, time, duration, volume)
-                mf.addNote(0, 0, note, time_sec, 0.25, 100) 
-                unique_notes.append(note)
-                last_note = note
-
-        with open(output_midi, 'wb') as out_f:
-            mf.writeFile(out_f)
-            
+        # Prosta kwantyzacja do MIDI
+        for t, p in notes:
+            if p != last_note:
+                mf.addNote(0, 0, p, t, 0.25, 100)
+                unique_notes.append((t, p))
+                last_note = p
+                
+        with open(output_midi, 'wb') as f: mf.writeFile(f)
+        
         return unique_notes
 
-    def generate_tab(self, midi_notes, output_txt="tabulatura.txt"):
-        """Generuje tekstową tabulaturę gitarową (Standard E)."""
-        print("[AUDIO] Obliczam optymalne palcowanie...")
-        
-        # 6 strun
+    def generate_tab(self, midi_notes, output_txt="tab.txt"):
+        # --- Generator Tabulatury (jak w v0.2) ---
+        pitches = [n[1] for n in midi_notes] if midi_notes and isinstance(midi_notes[0], tuple) else midi_notes
         lines = {i: [] for i in range(6)} 
         
-        for note in midi_notes:
-            best_string = -1
-            best_fret = 100
-            
-            # Algorytm szukający najniższego progu (najłatwiejszego do zagrania)
-            for str_idx, open_note in enumerate(self.tuning_strings):
-                fret = note - open_note
-                # Zakres gryfu (0-24 progi)
-                if 0 <= fret <= 24:
-                    if fret < best_fret:
-                        best_fret = fret
-                        best_string = str_idx
-            
-            # Rysowanie tabulatury
+        for note in pitches:
+            best_string, best_fret = -1, 100
+            for s_idx, open_n in enumerate(self.tuning_strings):
+                fret = note - open_n
+                if 0 <= fret <= 24 and fret < best_fret:
+                    best_fret, best_string = fret, s_idx
             for i in range(6):
-                if i == best_string:
-                    # Dodajemy padding żeby było równo
-                    fret_str = str(best_fret)
-                    lines[i].append(f"-{fret_str}-".ljust(4, '-'))
-                else:
-                    lines[i].append("----")
+                lines[i].append(f"-{best_fret}-".ljust(4, '-') if i == best_string else "----")
         
-        # Zapis do pliku
-        with open(output_txt, "w", encoding="utf-8") as f:
-            f.write("=== AMO MUSICA CORE - TABULATURA ===\n")
-            f.write("Strojenie: Standard E\n\n")
-            
-            chunk_size = 16 # Ilość nut w jednej linii
-            num_notes = len(lines[0])
-            
-            for i in range(0, num_notes, chunk_size):
+        with open(output_txt, "w") as f:
+            f.write("=== AMO MUSICA TABULATURE ===\n\n")
+            for i in range(0, len(lines[0]), 16):
                 f.write("\n")
-                for str_idx in range(6):
-                    chunk = "".join(lines[str_idx][i:i+chunk_size])
-                    string_name = ["e", "B", "G", "D", "A", "E"][str_idx]
-                    f.write(f"{string_name}|{chunk}|\n")
-        
+                for s in range(6): 
+                    s_name = ['e','B','G','D','A','E'][s]
+                    f.write(f"{s_name}|{''.join(lines[s][i:i+16])}|\n")
         return output_txt
