@@ -78,3 +78,8 @@ System wykorzystuje `FluidR3_GM.sf2` do renderowania wysokiej jakości dźwięku
 ---
 *Dokumentacja wygenerowana dla użytkownika: Maciek*
 *Status Integralności: SHA-256 SoulGuard Aktywny*
+# Copyright (C) 2025 Maciek (maciej615)
+# EriAmo is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
