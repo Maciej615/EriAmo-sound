@@ -63,5 +63,11 @@ Aby sprawdzić, co "czuje" EriAmo, użyj narzędzi wizualizacji:
 * **Historia**: Dane o ewolucji duszy są gromadzone w pliku `data/soul_history.csv`.
 
 ---
-*Użytkownik: Maciek*
+*Użytkownik: Maciej Mazur*
 *Wersja dokumentacji: 5.9.2*
+ Copyright (C) 2025 Maciek (maciej615)
+ ---
+ EriAmo is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
