@@ -1,5 +1,10 @@
 # amocore_v59.py
 # -*- coding: utf-8 -*-
+# Copyright (C) 2025 Maciek (maciej615)
+# EriAmo is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 """
 System Ontologicznej Pamięci Muzyki v5.9.2 [STABLE + SLEEP]
 - TRYB: UNBOUNDED (Historia Liniowa, Nieskończony Wzrost)
