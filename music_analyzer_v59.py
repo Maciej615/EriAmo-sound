@@ -1,5 +1,10 @@
 # music_analyzer_v59.py
 # -*- coding: utf-8 -*-
+# Copyright (C) 2025 Maciek (maciej615)
+# EriAmo is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 """
 Analizator Muzyczny EriAmo v5.9.1 [COMPATIBILITY FIX]
 - Dostosowany do rdzenia v5.9.1 (brak osi 'etyka', nowa oś 'improwizacja')
